@@ -600,20 +600,32 @@ def button_click(update: Update, context: CallbackContext) -> None:
             query.message.reply_text(text=f"<b>لينك المهمة</b>: \n\n {next_task.task_url}",  
                                 parse_mode= 'HTML',disable_web_page_preview=True)
 
-
-            target_accounts = session.query(TargetAccount).filter(
+            target_type = next_task.task_target_type
+            if target_type and int(target_type) < 1:
+                target_accounts = session.query(TargetAccount).filter(
                 TargetAccount.account_type == next_task.task_target_type, TargetAccount.is_used == false()).order_by(
                     TargetAccount.publishing_level.asc(), TargetAccount.access_level.asc()).limit(4).all()
+            else:
+                target_accounts = session.query(TargetAccount).filter(
+                    TargetAccount.account_type == next_task.task_target_type, TargetAccount.is_used == false()).order_by(
+                        TargetAccount.publishing_level.asc(), TargetAccount.access_level.asc()).limit(4).all()
                 # Check if the query returned no unused accounts
             if not target_accounts:
                 # Reset is_used for all accounts to False and retry the query
-                session.query(TargetAccount).filter(
-                    TargetAccount.account_type == next_task.task_target_type).update({TargetAccount.is_used: false()})
+                if target_type and int(target_type) < 1:
+                    session.query(TargetAccount).filter(
+                        TargetAccount.account_type == next_task.task_target_type).update({TargetAccount.is_used: false()})
+                else:
+                    session.query(TargetAccount).update({TargetAccount.is_used: false()})
                 session.commit()
 
-                target_accounts = session.query(TargetAccount).filter(
-                    TargetAccount.account_type == next_task.task_target_type,
-                    TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
+                if target_type and int(target_type) < 1:
+                    target_accounts = session.query(TargetAccount).filter(
+                        TargetAccount.account_type == next_task.task_target_type,
+                        TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
+                                                            TargetAccount.access_level.asc()).limit(4).all()
+                else:
+                    target_accounts = session.query(TargetAccount).filter(TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
                                                             TargetAccount.access_level.asc()).limit(4).all()
             if target_accounts:
                 query.message.reply_text(text= "<b>الحسابات المستهدفة</b>",  
