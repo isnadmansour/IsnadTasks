@@ -409,7 +409,6 @@ async def upload_isnad_tasks(
                 "task_target_type": row[column_indices["TASK_TARGET_TYPE"]],
                 "batch_id": batch_id
                 }
-            print('account_data:',account_data)
             db_account = IsnadTasks(**account_data)
             db.add(db_account)
 
@@ -589,7 +588,6 @@ def button_click(update: Update, context: CallbackContext) -> None:
     option = query.data
     Session = sessionmaker(bind=engine)
     session = Session()
-    print('option----:',option)
 
     if option == 'option1':
         next_task = get_next_task(update.callback_query.from_user.id)
@@ -697,7 +695,7 @@ def main() -> None:
     print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6891296977:AAGD54r4U6tBFAx7L0P2jOIPgCcxh2NsHjU")
+    updater = Updater("6930798784:AAE2ZRvwX5u5rAJAzDcks55i0GzrE-yksGw")
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
