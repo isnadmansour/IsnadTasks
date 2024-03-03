@@ -508,7 +508,7 @@ def start(update: Update, context: CallbackContext) -> None:
         # If the user is a member of the private group, send a welcome message
         # update.message.reply_text("Welcome! You are authorized to use this bot.")
         keyboard = [
-        [InlineKeyboardButton("💥 ابدأ مهمة", callback_data='option1')]]
+        [InlineKeyboardButton("💥 مهمة اليوم الجديدة", callback_data='option1')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.send_message(chat_id=update.effective_chat.id,text=welcome_message, reply_markup=reply_markup,  parse_mode= 'Markdown')
     else:
@@ -595,7 +595,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
 
             user_sessions[update.callback_query.from_user.id] = {"task_target_type": next_task.task_target_type}
             print(f"Next task for user {update.callback_query.from_user.id}: {next_task.id}")
-            query.message.reply_text(text=f"<b>لينك المهمة</b>: \n\n {next_task.task_url}",  
+            query.message.reply_text(text=f"<b>انسخ منشور جديد:</b>: \n\n {next_task.task_url}",  
                                 parse_mode= 'HTML',disable_web_page_preview=True)
 
             target_type = next_task.task_target_type
@@ -626,7 +626,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     target_accounts = session.query(TargetAccount).filter(TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
                                                             TargetAccount.access_level.asc()).limit(4).all()
             if target_accounts:
-                query.message.reply_text(text= "<b>الحسابات المستهدفة</b>",  
+                query.message.reply_text(text= "<b>الحسابات المستهدفة:</b>",  
                                                 parse_mode= 'HTML',disable_web_page_preview=True)
                 for target_account in target_accounts:
                     if target_account.account_id:
@@ -638,7 +638,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     session.commit()
                     
                 keyboard = [
-                [InlineKeyboardButton("🔄 مهمة جديدة",  callback_data='option1')],
+                [InlineKeyboardButton("🔄 مهمة اليوم الجديدة",  callback_data='option1')],
                 [InlineKeyboardButton("🔻اكونتات مستهدفة جديدة🔻", callback_data='option2')]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -646,9 +646,9 @@ def button_click(update: Update, context: CallbackContext) -> None:
                 query.message.reply_text(' يرجي إختيار أحد الخيارات التالية: ', reply_markup=reply_markup) 
         else:
             keyboard = [
-                [InlineKeyboardButton("🔄 مهمة جديدة",  callback_data='option1')]]
+                [InlineKeyboardButton("🔄 مهمة اليوم الجديدة",  callback_data='option1')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            query.message.reply_text('🔻شكراً لحماسك, لقد قمت بتنفيذ المهمة كاملة. برجاء إنتظار مهمات جديدة قادمة ',reply_markup=reply_markup) 
+            query.message.reply_text('🔻انتهت مهمة اليوم، ربنا يسدد رمينا ',reply_markup=reply_markup) 
     if option == 'option2':
         task_target_type = user_sessions.get(update.callback_query.from_user.id, {}).get("task_target_type")
         if task_target_type:
@@ -667,7 +667,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
                                                             TargetAccount.access_level.asc()).limit(4).all()
             if target_accounts:
-                query.message.reply_text(text= "<b>الحسابات المستهدفة</b>",  
+                query.message.reply_text(text= "<b>الحسابات المستهدفة:</b>",  
                                             parse_mode= 'HTML',disable_web_page_preview=True)
                 for target_account in target_accounts:
                     if target_account.account_id:
@@ -679,7 +679,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     session.commit()
                     
                 keyboard = [
-                [InlineKeyboardButton("🔄 مهمة جديدة",  callback_data='option1')],
+                [InlineKeyboardButton("🔄 مهمة اليوم الجديدة",  callback_data='option1')],
                 [InlineKeyboardButton("🔻اكونتات مستهدفة جديدة🔻", callback_data='option2')]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -695,7 +695,7 @@ def main() -> None:
     print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6930798784:AAE2ZRvwX5u5rAJAzDcks55i0GzrE-yksGw")
+    updater = Updater("6930798784:AAFtu0eA6QZ5xtfXz4Ax8gjdIT__ysPeNuE")
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
