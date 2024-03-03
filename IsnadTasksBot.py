@@ -85,7 +85,7 @@ app = FastAPI(title="Isnad Tasks Bot",
               )
 
 # SQLite database setup
-DATABASE_URL = "sqlite:///./isnad999.db"
+DATABASE_URL = "sqlite:///./isnad.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
 
@@ -695,7 +695,7 @@ def main() -> None:
     print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6930798784:AAFtu0eA6QZ5xtfXz4Ax8gjdIT__ysPeNuE")
+    updater = Updater("6930798784:AAFG55NNVY7HlC_l6xgDgdsbEBmm7RER58E")
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
