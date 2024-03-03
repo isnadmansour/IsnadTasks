@@ -691,11 +691,11 @@ def button_click(update: Update, context: CallbackContext) -> None:
 def main() -> None:
 
     # Add dummy tasks data
-    add_dummy_tasks()
-    print("Dummy tasks data added.")
+    # add_dummy_tasks()
+    # print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6930798784:AAFG55NNVY7HlC_l6xgDgdsbEBmm7RER58E")
+    updater = Updater("6918060750:AAES3NCbLWHoT19dNB-9qB8xg-TIPQdAItI")
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
