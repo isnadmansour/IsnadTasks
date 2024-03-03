@@ -487,7 +487,7 @@ async def read_logs(api_key: str = Depends(get_api_key)):
         )
 
 # Define the private group ID
-ISNAD_GROUP_ID = -1002038467827  # Replace with your private group ID
+ISNAD_GROUP_ID = -1002110233698  # Replace with your private group ID
 
 # Define your welcome message and options
 welcome_message = "أهلا بك في بوت مهمات *إسناد.*\n\n لبدأ المهمات, برجاء الضغط علي الإختيار التالي  . .\n\n"
@@ -695,7 +695,7 @@ def main() -> None:
     # print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6930798784:AAF0t4shccWVHyoieRDuJfpKHqr-_YlxiPw")
+    updater = Updater("6930798784:AAEhqygccMJqwBcL4N1OiCa8K181INviV4M")
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
