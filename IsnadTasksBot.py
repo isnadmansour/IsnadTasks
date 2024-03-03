@@ -695,7 +695,7 @@ def main() -> None:
     # print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6930798784:AAE3IzRPyBCeA-F2aBhHOqykbiVETblAvKg")
+    updater = Updater("6930798784:AAF0t4shccWVHyoieRDuJfpKHqr-_YlxiPw")
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
