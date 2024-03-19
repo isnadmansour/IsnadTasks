@@ -43,7 +43,7 @@ description = """
 ## Isnad Tasks - Util API <img src=\'https://flagcdn.com/24x18/ps.png\'> 🔻🔻🔻
 
 
-Isnad tasks - is a powerful tool designed to streamline Isnad tasks.
+Isnad tasks - is a powerful tool designed to streamline Isnad tasks, as well as authenticting Isnad users.
 
 The following APIs provide various services for managing tasks, handling target user IDs, and reading file contents.
 
@@ -57,6 +57,9 @@ The following APIs provide various services for managing tasks, handling target 
     Maintain a list of target Twitter users. 
     Each line in the uploaded file should represent a single Twitter user ID.
 
+- **Check Isnad User Membership:**
+    Check if a user with the provided generated Isnad ID is a member of Isnad group. 
+
 **Authentication:**
     
 Access to these services is protected by an API key mechanism. Users must provide a valid API key in the request header for authentication.
@@ -67,7 +70,9 @@ Access to these services is protected by an API key mechanism. Users must provid
 
 - To upload excel file of Isnad tasks: Use the `/upload-isnad-tasks/` endpoint, providing an excel sheet of the accounts details and ensuring the provided API key is valid.
 
-- To Check Target Account Details: Access the `/get-target-account-details/` specifying the account name and providing the API key for authentication.
+- To check Target Account Details: Access the `/get-target-account-details/` specifying the account name and providing the API key for authentication.
+
+- To check User Membership: Access the `/check-membership/` specifying the isnad id of the user and providing the API key for authentication.
 
 - To display logs: Access the `/logs/` endpoint.
  
@@ -81,11 +86,11 @@ For users requiring an API key, please contact `M Mansour` for assistance.
 app = FastAPI(title="Isnad Tasks Bot",
               description=description,
               summary="Isnad Tasks - Util API.",
-              version="0.0.1", swagger_ui_parameters={"defaultModelsExpandDepth": -1}
+              version="0.1.1", swagger_ui_parameters={"defaultModelsExpandDepth": -1}
               )
 
 # SQLite database setup
-DATABASE_URL = "sqlite:///./isnad.db"
+DATABASE_URL = "sqlite:///./isnadT.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
 
@@ -115,6 +120,13 @@ class IsnadTasks(Base):
     batch_id = Column(Integer, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class IsnadUsers(Base):
+    __tablename__ = 'isnad_users'
+
+    id = Column(Integer, primary_key=True)
+    telegram_user_id = Column(Integer, unique=True)
+    isnad_id = Column(String, unique=True)
 
 # Define a Task class to represent the tasks table in the database
 class Task(Base):
@@ -173,10 +185,8 @@ def add_dummy_tasks():
    
 
 def get_db():
-    # Step 5: Insert data into the database
     Session = sessionmaker(bind=engine)
     session = Session()
-    # db = session
     try:
         yield session
     finally:
@@ -249,6 +259,38 @@ user_api_key_map = {
     # Add more users and their corresponding api keys
 }
 
+# Define a dictionary to store the mapping of userid to api_key for 3rd party services
+services_api_key_map = {
+    "service1": "Hw1MXuWmKwsG4UXlRITVvS3vkKd50e3iKD2Z9lXPvXZ5tuUEsTGAfqT8m8AnNGuo", # Ammar
+    "service2": "ERGZdjZqumtfZccYmpYea8fe0e3iKc512018e515diiVZtG3x6b0ecae15aMwdvw", # Qafeer
+    "service3": "Wb6bT0ecae1a95abYBwsoYeVFqUGYu64a71Thj7qHA97ca8zj7fb0aa4af959VOKX",
+    "service4": "wRkBnrIMx20TPYRduKsq3SXfc8WkXh0Pj3H0hGYGJBT7qo57744ee8861cqkyMsl",
+    "service5": "AfIZ5fc410f2efe4MdinHqaFIZnDgEWzDBw2PgubmffcQzUj9Lh5WaTz3ilzFx8Dp",
+    "service6": "XQ5ihKJl2G8e28MM8O0Fs06U8e28d0EeF4u3QLAMVbppzJETTul90PhQh7vI9oC4R",
+    "admin": API_KEY_ADMIN
+    # Add more users and their corresponding api keys
+}
+
+
+# Dependency to get the userid based on the provided api_key
+async def get_service_api_key(api_key: str = Header(..., description="Services API key for authentication")):
+    """
+    Get User ID
+
+    Retrieves the userid based on the provided API key.
+
+    - **api_key**: API key for authentication.
+
+    Returns the corresponding userid.
+    """
+    for userid, key in services_api_key_map.items():
+        if key == api_key:
+            return userid
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid API key",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 # Dependency to get the userid based on the provided api_key
 async def get_api_key(api_key: str = Header(..., description="API key for authentication")):
@@ -386,8 +428,8 @@ async def upload_isnad_tasks(
 
     Allows the application to upload an Excel file, extract data, and add or update it in the database.
 
+    - **api_key**: API key for authentication.
     - **file**: Upload an Excel file.
-    - **db**: Database session.
 
     Returns a confirmation message.
     """
@@ -424,14 +466,16 @@ async def upload_isnad_tasks(
 @app.get("/get-target-account-details/")
 async def get_account(
         api_key: str = Depends(get_api_key),
-        account_name: str = Query(..., title="Account Id", description="The ACCOUNT_NAME to retrieve details for."), db: Session = Depends(get_db)):
+        account_name: str = Query(..., title="Account Id", description="The ACCOUNT_NAME to retrieve details for."),
+        db: Session = Depends(get_db)):
     """
     Get Target Account Details by ACCOUNT_NAME
 
     Allows the application to retrieve account details from the database based on the provided ACCOUNT_NAME.
 
+    - **api_key**: API key for authentication.
     - **account_name**: The ACCOUNT_NAME to retrieve details for.
-    - **db**: Database session.
+    
 
     Returns account details.
     """
@@ -460,6 +504,53 @@ async def get_account(
         "created_at": account.created_at
     }
 
+updater = Updater("6930798784:AAEhqygccMJqwBcL4N1OiCa8K181INviV4M")
+
+# Endpoint to check if a user is a member of Isnad group
+@app.post("/check-membership/")
+async def check_membership(
+    api_key: str = Depends(get_service_api_key),
+    isnad_id: str = Query(..., title="ISNAD Id", description="The generated ISNAD Id to validate."),
+    db: Session = Depends(get_db)
+):
+    
+    """
+    Check User Membership
+
+    Check if a user with the provided generated Isnad ID is a member of Isnad group.
+
+    - **api_key**: API key for authentication.
+    - **isnad_id**: The generated ID of the user to check.
+    
+
+    Returns:
+        dict: A JSON response indicating the result of the membership check.
+
+    Raises:
+        HTTPException: If the user is not found or is no longer a member.
+    """
+        
+    global updater
+    # Check if the generated ID exists in the database
+    user = db.query(IsnadUsers).filter_by(isnad_id=isnad_id).first()
+
+    if user:
+        # Check if the user is still a member of the group
+        is_member = updater.bot.get_chat_member(ISNAD_GROUP_ID, user.telegram_user_id)
+
+        if is_member.status in ['member', 'administrator', 'creator']:
+            return {"status": "success", "code": "MEMBER_FOUND", "message": "User is a member of the group."}
+        elif is_member.status == 'left':
+            # If the user left the group, remove their record from the database
+            db.delete(user)
+            db.commit()
+            raise HTTPException(status_code=404, detail={"status": "error", "code": "MEMBER_LEFT", "message": "User is no longer a member of the group."})
+        else:
+            raise HTTPException(status_code=404, detail={"status": "error", "code": "USER_STATUS_UNKNOWN", "message": "User status unknown."})
+    else:
+        raise HTTPException(status_code=404, detail={"status": "error", "code": "USER_NOT_FOUND", "message": "User not found."})
+    
+
 
 # Log viewer
 @app.get("/logs", response_class=PlainTextResponse)
@@ -487,7 +578,7 @@ async def read_logs(api_key: str = Depends(get_api_key)):
         )
 
 # Define the private group ID
-ISNAD_GROUP_ID = -1002110233698  # Replace with your private group ID
+ISNAD_GROUP_ID = -1002110233698# Replace with your private group ID
 
 # Define your welcome message and options
 welcome_message = "أهلا بك في بوت مهمات *إسناد.*\n\n لبدأ المهمات, برجاء الضغط علي الإختيار التالي  . .\n\n"
@@ -495,25 +586,78 @@ welcome_message = "أهلا بك في بوت مهمات *إسناد.*\n\n لبد
 def has_completed_batch(user_id: int, batch_id: int, db: Session) -> bool:
     return db.query(IsnadTasks).filter(IsnadTasks.batch_id == batch_id, IsnadTasks.is_used == true()).count() == db.query(IsnadTasks).filter(IsnadTasks.batch_id == batch_id).count()
 
+def generate_custom_id(chat_id):
+    # Define the mapping for each digit to characters
+    digit_mapping = {
+        '1': 'dxv',
+        '2': 'mfc',
+        '3': 'UsT',
+        '4': 'HqF',
+        '5': 'iKJ',
+        '6': 'Gdj',
+        '7': '1Mu',
+        '8': '29l',
+        '9': 'qXX',
+        '0': 'YeF'
+    }
+
+    # Convert the chat ID to a string and iterate over each digit
+    custom_id = ''
+    for digit in str(chat_id):
+        # Map the digit to its corresponding characters
+        custom_id += digit_mapping.get(digit, '')
+
+    return custom_id
+
 # Define a function to handle the /start command
 def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message with options when the command /start is issued."""
     # Get the user ID of the user who triggered the command
-    user_id = update.effective_user.id
-
+    telegram_user_id = update.effective_user.id
+    Session = sessionmaker(bind=engine)
+    session = Session()
     # Check if the user is a member of the private group
-    is_member = context.bot.get_chat_member(ISNAD_GROUP_ID, user_id)
+    is_member = context.bot.get_chat_member(ISNAD_GROUP_ID, telegram_user_id)
+    if is_member.status in ['member', 'administrator', 'creator']:
+        # If the user is a member of the private group
+        # Check if the user exists in the database
+        user = session.query(IsnadUsers).filter_by(telegram_user_id=telegram_user_id).first()
 
-    if is_member.status != 'left':
-        # If the user is a member of the private group, send a welcome message
+        if not user:
+            # Generate a unique ID for the user
+            # isnad_id = str(uuid.uuid4())
+            isnad_id = generate_custom_id(telegram_user_id)
+            
+            # Save the user and generated ID in the database
+            new_user = IsnadUsers(telegram_user_id=telegram_user_id, isnad_id=isnad_id)
+            session.add(new_user)
+            session.commit()
+            update.message.reply_text(f"كود إسناد الخاص بك:")
+            update.message.reply_text(f"{isnad_id}")
+            update.message.reply_text(f"يرجي الإحتفاظ به للأهمية.")
+        else:
+            # If the user is a member of the private group, send a welcome message
+            update.message.reply_text(f"كود إسناد الخاص بك:")
+            update.message.reply_text(f"{user.isnad_id}")
+            update.message.reply_text(f"يرجي الإحتفاظ به للأهمية.")
+            
         # update.message.reply_text("Welcome! You are authorized to use this bot.")
-        keyboard = [
-        [InlineKeyboardButton("💥 مهمة اليوم الجديدة", callback_data='option1')]]
+        keyboard = [[InlineKeyboardButton("💥 ابدأ مهمة", callback_data='option1')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.send_message(chat_id=update.effective_chat.id,text=welcome_message, reply_markup=reply_markup,  parse_mode= 'Markdown')
+
+    elif is_member.status == 'left':
+        # If the user is not a member of the private group
+        # Check if the user exists in the database and remove their record if found
+        user = session.query(IsnadUsers).filter_by(telegram_user_id=telegram_user_id).first()
+        
+        if user:
+            session.delete(user)
+            session.commit()
+        update.message.reply_text("عذراً ،، غير مصرح لغير أعضاء حملة اسناد باستخدام هذا البوت")
     else:
-        # If the user is not a member of the private group, inform them that they need to join the group to use the bot
-        update.message.reply_text("Sorry, you are not authorized to use this bot.")
+        # If the user's status is not clear (e.g., restricted), handle accordingly
+        update.message.reply_text("عذراً ،، غير مصرح لغير أعضاء حملة اسناد باستخدام هذا البوت")
 
     
 # Function to fetch the next task for a user
@@ -595,7 +739,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
 
             user_sessions[update.callback_query.from_user.id] = {"task_target_type": next_task.task_target_type}
             print(f"Next task for user {update.callback_query.from_user.id}: {next_task.id}")
-            query.message.reply_text(text=f"<b>انسخ منشور جديد:</b>: \n\n {next_task.task_url}",  
+            query.message.reply_text(text=f"<b>لينك المهمة</b>: \n\n {next_task.task_url}",  
                                 parse_mode= 'HTML',disable_web_page_preview=True)
 
             target_type = next_task.task_target_type
@@ -626,7 +770,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     target_accounts = session.query(TargetAccount).filter(TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
                                                             TargetAccount.access_level.asc()).limit(4).all()
             if target_accounts:
-                query.message.reply_text(text= "<b>الحسابات المستهدفة:</b>",  
+                query.message.reply_text(text= "<b>الحسابات المستهدفة</b>",  
                                                 parse_mode= 'HTML',disable_web_page_preview=True)
                 for target_account in target_accounts:
                     if target_account.account_id:
@@ -638,7 +782,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     session.commit()
                     
                 keyboard = [
-                [InlineKeyboardButton("🔄 مهمة اليوم الجديدة",  callback_data='option1')],
+                [InlineKeyboardButton("🔄 مهمة جديدة",  callback_data='option1')],
                 [InlineKeyboardButton("🔻اكونتات مستهدفة جديدة🔻", callback_data='option2')]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -646,9 +790,9 @@ def button_click(update: Update, context: CallbackContext) -> None:
                 query.message.reply_text(' يرجي إختيار أحد الخيارات التالية: ', reply_markup=reply_markup) 
         else:
             keyboard = [
-                [InlineKeyboardButton("🔄 مهمة اليوم الجديدة",  callback_data='option1')]]
+                [InlineKeyboardButton("🔄 مهمة جديدة",  callback_data='option1')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            query.message.reply_text('🔻انتهت مهمة اليوم، ربنا يسدد رمينا ',reply_markup=reply_markup) 
+            query.message.reply_text('🔻شكراً لحماسك, لقد قمت بتنفيذ المهمة كاملة. برجاء إنتظار مهمات جديدة قادمة ',reply_markup=reply_markup) 
     if option == 'option2':
         task_target_type = user_sessions.get(update.callback_query.from_user.id, {}).get("task_target_type")
         if task_target_type:
@@ -667,7 +811,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     TargetAccount.is_used == false()).order_by(TargetAccount.publishing_level.asc(),
                                                             TargetAccount.access_level.asc()).limit(4).all()
             if target_accounts:
-                query.message.reply_text(text= "<b>الحسابات المستهدفة:</b>",  
+                query.message.reply_text(text= "<b>الحسابات المستهدفة</b>",  
                                             parse_mode= 'HTML',disable_web_page_preview=True)
                 for target_account in target_accounts:
                     if target_account.account_id:
@@ -679,7 +823,7 @@ def button_click(update: Update, context: CallbackContext) -> None:
                     session.commit()
                     
                 keyboard = [
-                [InlineKeyboardButton("🔄 مهمة اليوم الجديدة",  callback_data='option1')],
+                [InlineKeyboardButton("🔄 مهمة جديدة",  callback_data='option1')],
                 [InlineKeyboardButton("🔻اكونتات مستهدفة جديدة🔻", callback_data='option2')]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -692,11 +836,10 @@ def main() -> None:
 
     # Add dummy tasks data
     # add_dummy_tasks()
-    # print("Dummy tasks data added.")
+    print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
-    updater = Updater("6930798784:AAEhqygccMJqwBcL4N1OiCa8K181INviV4M")
-
+    global updater
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
 
