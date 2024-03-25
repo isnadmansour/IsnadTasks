@@ -2,10 +2,11 @@ import logging
 import random
 import threading
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from typing import List
-import uuid
+
 import pytz
 import telegram
 from fastapi import (BackgroundTasks, Depends, FastAPI, File, Header,
@@ -13,8 +14,9 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, File, Header,
 from fastapi.background import BackgroundTasks
 from fastapi.responses import JSONResponse, PlainTextResponse
 from openpyxl import load_workbook
-from sqlalchemy import (Boolean, Column, DateTime, Integer, String,
-                        create_engine, desc, inspect,distinct, true,Sequence)
+from pydantic import BaseModel
+from sqlalchemy import (Boolean, Column, DateTime, Integer, Sequence, String,
+                        create_engine, desc, distinct, inspect, true)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.expression import false
@@ -72,7 +74,7 @@ Access to these services is protected by an API key mechanism. Users must provid
 
 - To check Target Account Details: Access the `/get-target-account-details/` specifying the account name and providing the API key for authentication.
 
-- To check User Membership: Access the `/check-membership/` specifying the isnad id of the user and providing the API key for authentication.
+- To check User Membership: Access the `/check-membership/` specifying the JSON object using isnad_code of the user and providing the API key for authentication.
 
 - To display logs: Access the `/logs/` endpoint.
  
@@ -90,9 +92,14 @@ app = FastAPI(title="Isnad Tasks Bot",
               )
 
 # SQLite database setup
-DATABASE_URL = "sqlite:///./isnadT.db"
+DATABASE_URL = "sqlite:///./isnadTasks.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
+
+
+# Define a Pydantic model for the request body
+class CheckMembershipRequest(BaseModel):
+    isnad_code: str
 
 
 class TargetAccount(Base):
@@ -130,7 +137,7 @@ class IsnadUsers(Base):
 
 # Define a Task class to represent the tasks table in the database
 class Task(Base):
-    __tablename__ = 'tasks1'
+    __tablename__ = 'tasks'
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -504,13 +511,13 @@ async def get_account(
         "created_at": account.created_at
     }
 
-updater = Updater("6930798784:AAEhqygccMJqwBcL4N1OiCa8K181INviV4M")
+updater = Updater("6930798784:AAHROEkjE7aInOS4ZdaA94Ib5JmhuCCW_no")
 
 # Endpoint to check if a user is a member of Isnad group
 @app.post("/check-membership/")
 async def check_membership(
+    request_data: CheckMembershipRequest,
     api_key: str = Depends(get_service_api_key),
-    isnad_id: str = Query(..., title="ISNAD Id", description="The generated ISNAD Id to validate."),
     db: Session = Depends(get_db)
 ):
     
@@ -520,7 +527,7 @@ async def check_membership(
     Check if a user with the provided generated Isnad ID is a member of Isnad group.
 
     - **api_key**: API key for authentication.
-    - **isnad_id**: The generated ID of the user to check.
+    - **isnad_code**: A JSON object of the users' isnad_code.
     
 
     Returns:
@@ -531,8 +538,11 @@ async def check_membership(
     """
         
     global updater
+    # Extract the user_id from the request body
+    isnad_code = request_data.isnad_code
+
     # Check if the generated ID exists in the database
-    user = db.query(IsnadUsers).filter_by(isnad_id=isnad_id).first()
+    user = db.query(IsnadUsers).filter_by(isnad_id=isnad_code).first()
 
     if user:
         # Check if the user is still a member of the group
@@ -836,7 +846,7 @@ def main() -> None:
 
     # Add dummy tasks data
     # add_dummy_tasks()
-    print("Dummy tasks data added.")
+    # print("Dummy tasks data added.")
     """Run the bot."""
     # Create the Updater and pass it your bot's token
     global updater
